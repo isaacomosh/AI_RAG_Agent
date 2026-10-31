@@ -1,6 +1,6 @@
 from sentence_transformers import SentenceTransformer
 import chromadb
-
+from sentence_transformers import CrossEncoder
 
 #initialize ChromaDB
 client=chromadb.PersistentClient(path="./chroma_db")
