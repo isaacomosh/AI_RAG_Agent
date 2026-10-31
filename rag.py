@@ -2,6 +2,10 @@ from sentence_transformers import SentenceTransformer
 import chromadb
 from sentence_transformers import CrossEncoder
 
+
+reranker=CrossEncoder(
+    "cross-encoder/ms-marco-MiniLM-L-6-v2"
+)
 #initialize ChromaDB
 client=chromadb.PersistentClient(path="./chroma_db")
 collection=client.get_or_create_collection(name="pdf_documents")
@@ -59,3 +63,42 @@ def retrieve_chunks(question, n_results=3):
     )
 
     return results
+
+
+#reranking 
+def rerank_chunks(question, results, top_k=3):
+
+    documents = results["documents"][0]
+
+    metadatas = results["metadatas"][0]
+
+    # Create question-document pairs as tuples
+    pairs = [
+        (question, document)
+        for document in documents
+    ]
+
+    # Generate relevance scores
+    scores = reranker.predict(pairs)
+
+    ranked_results = []
+
+    for document, metadata, score in zip(
+        documents,
+        metadatas,
+        scores
+    ):
+
+        ranked_results.append({
+            "text": document,
+            "page": metadata["page"],
+            "score": float(score)
+        })
+
+    # Sort by relevance
+    ranked_results.sort(
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
+    return ranked_results[:top_k]

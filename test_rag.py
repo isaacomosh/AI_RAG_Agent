@@ -1,5 +1,5 @@
 from pdf_processor import extract_text_from_pdf
-
+from rag import rerank_chunks   
 from rag import (
     chunk_text,
     store_chunks,
@@ -31,21 +31,26 @@ question = input("\nAsk something about your PDF: ")
 results = retrieve_chunks(question)
 
 
+
+#Retrieve 10 candidate chunks
+results=retrieve_chunks(question,n_results=10)
+
+reranked_results=rerank_chunks(
+    question,results,top_k=3
+)
+
+
+
 # 6. Combine retrieved chunks into context
 context = ""
 
-for document, metadata in zip(
-    results["documents"][0],
-    results["metadatas"][0]
-):
-
-    context += f"""
-    Page {metadata['page']}:
-
-    {document}
-
+for chunk  in reranked_results:
+    context+=f"""
+        Page: {chunk['page']}
+        Content:
+        {chunk['text']}
     """
-
+    
 
 # 7. Generate Gemini response
 answer = generate_answer(question, context)
